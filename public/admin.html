@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stow Kiosk - Admin Dashboard</title>
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <div class="logo">
+                <h1>Stow Kiosk Admin</h1>
+            </div>
+            <div class="user-info">
+                <span id="user-name">Not Logged In</span>
+                <button id="logout-btn" style="display: none;">Logout</button>
+            </div>
+        </header>
+
+        <div id="login-container" class="login-container">
+            <h2>Login</h2>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password">
+            </div>
+            <button id="login-btn">Login</button>
+            <p id="login-error" class="error-message"></p>
+        </div>
+
+        <div id="admin-dashboard" class="admin-dashboard" style="display: none;">
+            <nav class="admin-nav">
+                <button class="nav-button active" data-target="stations-panel">Stations</button>
+                <button class="nav-button" data-target="safety-messages-panel">Safety Messages</button>
+            </nav>
+
+            <div class="admin-panels">
+                <div id="stations-panel" class="panel active">
+                    <div class="panel-header">
+                        <h2>Station Management</h2>
+                        <div class="side-selector">
+                            <button class="side-button active" data-side="A">Side A</button>
+                            <button class="side-button" data-side="B">Side B</button>
+                        </div>
+                    </div>
+                    
+                    <div class="stations-container" id="stations-container">
+                        <!-- Stations will be loaded here -->
+                        <div class="loading">Loading stations...</div>
+                    </div>
+                </div>
+
+                <div id="safety-messages-panel" class="panel">
+                    <div class="panel-header">
+                        <h2>Safety Messages</h2>
+                        <button id="add-message-btn">Add New Message</button>
+                    </div>
+                    
+                    <div class="add-message-form" id="add-message-form" style="display: none;">
+                        <div class="form-group">
+                            <label for="message-text">Message Text:</label>
+                            <input type="text" id="message-text" name="message-text">
+                        </div>
+                        <div class="form-group">
+                            <label for="message-priority">Priority:</label>
+                            <select id="message-priority" name="message-priority">
+                                <option value="normal">Normal</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button id="save-message-btn">Save</button>
+                            <button id="cancel-message-btn">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="messages-container" id="messages-container">
+                        <!-- Messages will be loaded here -->
+                        <div class="loading">Loading messages...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utilities.js"></script>
+    <script src="/js/admin.js"></script>
+    <script src="/js/stationManager.js"></script>
+    <script src="/js/safetyMessage.js"></script>
+</body>
+</html>

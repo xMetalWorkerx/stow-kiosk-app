@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stow Kiosk Test</title>
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Rajdhani:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="landing-container">
+        <div class="header">
+            <h1>Stow Kiosk <span class="title-accent">Test</span></h1>
+        </div>
+        
+        <div class="display-frame">
+            <div class="kiosk-selection">
+                <h2>Choose Your Kiosk</h2>
+                <div class="selection-buttons">
+                    <a href="/side/a" class="kiosk-button side-a" target="_blank">
+                        <span class="side-letter">A</span>
+                        <span class="side-name">West Side</span>
+                    </a>
+                    <a href="/side/b" class="kiosk-button side-b" target="_blank">
+                        <span class="side-letter">B</span>
+                        <span class="side-name">East Side</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="admin-link">
+            <a href="/admin" target="_blank">Admin Dashboard</a>
+        </div>
+        
+        <div class="footer-info">
+            <span class="system-status">System Status: <span class="status-online">Online</span></span>
+            <span class="version">v2.4.3</span>
+        </div>
+    </div>
+    
+    <script>
+        // Handle kiosk button clicks with JavaScript animation
+        document.querySelectorAll('.kiosk-button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const thisButton = this; // Store reference to this
+                const href = this.getAttribute('href');
+                const target = this.getAttribute('target');
+                
+                // Add animation class
+                thisButton.classList.add('animated');
+                
+                // Remove class after animation completes and navigate
+                setTimeout(() => {
+                    thisButton.classList.remove('animated');
+                    
+                    // Navigate after animation completes
+                    if (target === '_blank') {
+                        window.open(href, target);
+                    } else {
+                        window.location.href = href;
+                    }
+                }, 300);
+            });
+        });
+
+        // Dynamic glow effect for kiosk buttons
+        document.addEventListener('DOMContentLoaded', () => {
+            const buttons = document.querySelectorAll('.kiosk-button');
+            
+            // Apply dynamic glow effect to each button
+            buttons.forEach(button => {
+                // Create dynamic shadow elements for each button
+                const glowElement = document.createElement('div');
+                glowElement.className = 'dynamic-glow';
+                button.appendChild(glowElement);
+                
+                // Initialize glow parameters
+                const isSideA = button.classList.contains('side-a');
+                const baseColor = isSideA ? '59, 158, 255' : '255, 153, 0';
+                const alternateColor = isSideA ? '30, 144, 255' : '255, 123, 0';
+                let glowIntensity = 0;
+                let glowDirection = 1; // 1 for increasing, -1 for decreasing
+                let glowSpeed = 0.01 + Math.random() * 0.01; // Slightly random speed
+                let hoverActive = false;
+                
+                // Handle hover states
+                button.addEventListener('mouseenter', () => {
+                    hoverActive = true;
+                    glowSpeed = 0.025; // Faster while hovering
+                });
+                
+                button.addEventListener('mouseleave', () => {
+                    hoverActive = false;
+                    glowSpeed = 0.01 + Math.random() * 0.01;
+                });
+                
+                // Animate the glow
+                function animateGlow() {
+                    if (button.classList.contains('animated')) {
+                        // Don't animate during click state
+                        requestAnimationFrame(animateGlow);
+                        return;
+                    }
+                    
+                    // Update glow intensity
+                    glowIntensity += glowDirection * glowSpeed;
+                    
+                    // Bounce between 0 and 1
+                    if (glowIntensity >= 1) {
+                        glowIntensity = 1;
+                        glowDirection = -1;
+                    } else if (glowIntensity <= 0) {
+                        glowIntensity = 0;
+                        glowDirection = 1;
+                        // Randomize speed slightly for organic feel
+                        glowSpeed = 0.01 + Math.random() * 0.01;
+                        if (hoverActive) glowSpeed = 0.025;
+                    }
+                    
+                    // Calculate final glow opacity and size
+                    const opacity = hoverActive ? 0.2 + glowIntensity * 0.5 : glowIntensity * 0.15;
+                    const spread = hoverActive ? 15 + glowIntensity * 15 : 5 + glowIntensity * 10;
+                    const sizeMultiplier = hoverActive ? 1.1 + glowIntensity * 0.1 : 1 + glowIntensity * 0.05;
+                    
+                    // Mix colors based on intensity for subtle color shift
+                    const r = Math.round(parseInt(baseColor.split(',')[0]) * (1 - glowIntensity * 0.3) + 
+                                        parseInt(alternateColor.split(',')[0]) * glowIntensity * 0.3);
+                    const g = Math.round(parseInt(baseColor.split(',')[1]) * (1 - glowIntensity * 0.3) + 
+                                        parseInt(alternateColor.split(',')[1]) * glowIntensity * 0.3);
+                    const b = Math.round(parseInt(baseColor.split(',')[2]) * (1 - glowIntensity * 0.3) + 
+                                        parseInt(alternateColor.split(',')[2]) * glowIntensity * 0.3);
+                    
+                    // Apply visual effects
+                    button.style.boxShadow = `0 4px ${spread}px rgba(${r}, ${g}, ${b}, ${opacity})`;
+                    button.style.borderColor = `rgba(255, 255, 255, ${0.08 + glowIntensity * 0.12})`;
+                    
+                    // Style the inner glow
+                    glowElement.style.opacity = opacity * 1.5;
+                    glowElement.style.boxShadow = `inset 0 0 ${spread * 1.5}px rgba(${r}, ${g}, ${b}, ${opacity * 0.7})`;
+                    glowElement.style.transform = `scale(${sizeMultiplier})`;
+                    
+                    // Add subtle color shift to the letter
+                    const letterElement = button.querySelector('.side-letter');
+                    if (letterElement) {
+                        // For side A: shift from light blue to a slightly brighter blue
+                        // For side B: shift from orange to a slightly brighter orange
+                        const letterSaturation = 90 + Math.round(glowIntensity * 10); // 90-100%
+                        const letterLightness = isSideA ? 
+                                               60 + Math.round(glowIntensity * 10) : // 60-70% for blue 
+                                               55 + Math.round(glowIntensity * 10);  // 55-65% for orange
+                        const letterHue = isSideA ? 
+                                         210 - Math.round(glowIntensity * 10) : // Shift from 210 to 200 for blue
+                                         35 - Math.round(glowIntensity * 5);    // Shift from 35 to 30 for orange
+                        
+                        letterElement.style.color = `hsl(${letterHue}, ${letterSaturation}%, ${letterLightness}%)`;
+                        letterElement.style.textShadow = `0 0 ${Math.round(5 + glowIntensity * 8)}px rgba(${r}, ${g}, ${b}, ${0.3 + glowIntensity * 0.4})`;
+                    }
+                    
+                    requestAnimationFrame(animateGlow);
+                }
+                
+                // Start animation
+                animateGlow();
+            });
+        });
+    </script>
+</body>
+</html>

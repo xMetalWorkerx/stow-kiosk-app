@@ -1,0 +1,418 @@
+:root {
+    --amazon-blue: #1A2433;
+    --amazon-orange: #FF9900;
+    --light-grey: #f5f5f5;
+    --dark-grey: #333;
+    --light-blue: #3B9EFF;
+    --gradient-primary: rgba(26, 36, 51, 0.95);
+    --gradient-secondary: rgba(45, 60, 80, 0.9);
+    --accent-teal: #00CED1;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+/* Typography adjustments */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+/* More refined heading style */
+h1 {
+    color: white;
+    font-size: 3rem;
+    letter-spacing: 2px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    padding-bottom: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.title-accent {
+    color: var(--light-blue);
+    font-weight: 400;
+    position: relative;
+}
+
+h2 {
+    color: white;
+    margin-bottom: 40px;
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+    position: relative;
+    display: inline-block;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+h2::after {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 2px;
+    background-color: var(--light-blue);
+    opacity: 0.7;
+}
+
+/* Subtle noise texture animation - reduced speed */
+@keyframes noiseAnimation {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+}
+
+body {
+    background-color: var(--amazon-blue);
+    color: white;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Noise texture overlay - reduced opacity */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    pointer-events: none;
+    z-index: 1;
+    animation: noiseAnimation 60s linear infinite;
+}
+
+/* Simplified gradient background */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(170deg, var(--gradient-primary) 0%, var(--gradient-secondary) 100%);
+    opacity: 0.4;
+    z-index: -1;
+}
+
+.landing-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 40px;
+    padding: 40px 0 20px;
+    position: relative;
+}
+
+/* Centered shine effect with limited width and permanent edge fadeout */
+.header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 19%; /* Positioned to center the 62% width element */
+    width: 62%;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        var(--light-blue) 0%,
+        var(--amazon-orange) 50%, 
+        var(--light-blue) 100%
+    );
+    background-size: 200% 100%;
+    animation: borderShine 20s ease-in-out infinite;
+    z-index: 0;
+}
+
+/* Permanent edge mask for fade effect */
+.header::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 19%;
+    width: 62%;
+    height: 2px;
+    background: linear-gradient(90deg,
+        var(--amazon-blue) 0%,
+        rgba(26, 36, 51, 0) 20%,
+        rgba(26, 36, 51, 0) 80%,
+        var(--amazon-blue) 100%
+    );
+    z-index: 1;
+    pointer-events: none;
+    mix-blend-mode: normal;
+}
+
+@keyframes borderShine {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.logo {
+    height: 50px;
+    margin-right: 20px;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.3));
+}
+
+/* Display frame styling - improved */
+.display-frame {
+    background-color: rgba(35, 47, 62, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 50px 40px;
+    margin: 0 auto 50px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+    max-width: 780px;
+}
+
+.display-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 100%
+    );
+}
+
+.display-frame::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(0, 0, 0, 0.3) 50%,
+        transparent 100%
+    );
+}
+
+.kiosk-selection {
+    text-align: center;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-bottom: 0;
+}
+
+.selection-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 80px;
+    margin-bottom: 10px;
+}
+
+/* Update kiosk buttons with more distinctive styles */
+.kiosk-button {
+    width: 180px;
+    height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(26, 36, 51, 0.8);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    overflow: hidden; /* Ensure glow effect doesn't spill out */
+}
+
+/* Dynamic glow styling */
+.dynamic-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 8px;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 0; /* Behind content but above button background */
+    transition: transform 0.05s ease;
+}
+
+/* State styling for the animated class (click effect) */
+.kiosk-button.animated {
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.kiosk-button.side-a.animated .dynamic-glow {
+    opacity: 0.3 !important;
+    box-shadow: inset 0 0 30px rgba(59, 158, 255, 0.4) !important;
+}
+
+.kiosk-button.side-b.animated .dynamic-glow {
+    opacity: 0.3 !important;
+    box-shadow: inset 0 0 30px rgba(255, 153, 0, 0.4) !important;
+}
+
+.side-letter {
+    font-size: 5rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+    position: relative;
+    font-family: 'Alfa Slab One', cursive;
+    line-height: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 90px; /* Fixed height to prevent layout shifts */
+    transition: color 0.2s ease, text-shadow 0.2s ease; /* Smooth transitions for color changes */
+    z-index: 1; /* Ensure letter stays above the glow */
+}
+
+/* Default colors that will be overridden by JS */
+.side-a .side-letter {
+    color: hsl(210, 90%, 60%); /* Base blue */
+}
+
+.side-b .side-letter {
+    color: hsl(35, 90%, 55%); /* Base orange */
+}
+
+.side-letter::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 10%;
+    width: 80%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.side-name {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1; /* Ensure text is above glow */
+}
+
+/* Style admin button to match the frame aesthetic */
+.admin-link {
+    text-align: center;
+    margin-top: 20px;
+    padding-bottom: 20px;
+}
+
+.admin-link a {
+    color: white;
+    text-decoration: none;
+    padding: 12px 30px;
+    background: rgba(35, 47, 62, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    transition: all 0.25s ease;
+    letter-spacing: 1.5px;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.admin-link a:hover {
+    background: rgba(59, 158, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Footer Info Section - improved spacing */
+.footer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    width: 100%;
+    max-width: 500px;
+    margin: 10px auto 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-family: 'Roboto Mono', monospace;
+    letter-spacing: 0.5px;
+}
+
+.system-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-online {
+    color: #4CAF50;
+    font-weight: 500;
+    position: relative;
+    padding-left: 16px;
+    margin-left: 8px;
+}
+
+.status-online::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+.version {
+    font-family: 'Roboto Mono', monospace;
+    letter-spacing: 1px;
+    opacity: 0.8;
+}
+
+.admin-link a::after {
+    content: '→';
+    margin-left: 6px;
+    opacity: 0;
+    transform: translateX(-5px);
+    display: inline-block;
+    transition: all 0.25s ease;
+}
+
+.admin-link a:hover::after {
+    opacity: 1;
+    transform: translateX(0);
+}

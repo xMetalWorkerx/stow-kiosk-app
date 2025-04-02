@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Stow Kiosk - Side A</title>
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/kiosk.css">
+</head>
+<body data-side="A">
+    <div class="kiosk-container">
+        <div class="header">
+            <div class="logo" id="side-title">A Side</div>
+            <div class="legend">
+                <div class="legend-item active-queue-legend">
+                    <span>Active Queue</span>
+                </div>
+                <div class="legend-item problem-solver-legend">
+                    <span>Problem Solve</span>
+                </div>
+            </div>
+            <div class="status-info">
+                <div class="status-dot"></div>
+                <span>System Online</span>
+                <span class="timestamp">Last Updated: <span id="update-time">Loading...</span></span>
+            </div>
+        </div>
+        
+        <div class="content" id="stations-container">
+            <!-- Fixed station layout -->
+            <div class="level">
+                <h2 class="level-title">LEVEL 1</h2>
+                <div class="stations">
+                    <div class="station" id="1-123">
+                        <div class="station-number">123</div>
+                    </div>
+                    <div class="station" id="1-149">
+                        <div class="station-number">149</div>
+                    </div>
+                    <div class="station" id="1-175">
+                        <div class="station-number">175</div>
+                    </div>
+                    <div class="station" id="1-203">
+                        <div class="station-number">215</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="level">
+                <h2 class="level-title">LEVEL 2</h2>
+                <div class="stations">
+                    <div class="station" id="2-123">
+                        <div class="station-number">123</div>
+                    </div>
+                    <div class="station" id="2-149">
+                        <div class="station-number">149</div>
+                    </div>
+                    <div class="station" id="2-175">
+                        <div class="station-number">175</div>
+                    </div>
+                    <div class="station" id="2-203">
+                        <div class="station-number">215</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="level">
+                <h2 class="level-title">LEVEL 3</h2>
+                <div class="stations">
+                    <div class="station" id="3-123">
+                        <div class="station-number">123</div>
+                    </div>
+                    <div class="station" id="3-149">
+                        <div class="station-number">149</div>
+                    </div>
+                    <div class="station" id="3-175">
+                        <div class="station-number">175</div>
+                    </div>
+                    <div class="station" id="3-215">
+                        <div class="station-number">215</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="safety-message" id="safety-message">SAFETY FIRST: Keep all aisles clear of obstructions</div>
+            <div class="refresh-info">Next refresh in <span id="countdown">60</span> seconds</div>
+        </div>
+    </div>
+
+    <script src="/js/utilities.js"></script>
+    <script src="/js/safetyMessage.js"></script>
+    <script src="/js/stationManager.js"></script>
+    <script src="/js/kiosk.js"></script>
+    <script>
+        // Initialize the kiosk with the appropriate side
+        document.addEventListener('DOMContentLoaded', function() {
+            const path = window.location.pathname;
+            const side = path.includes('side-a') || path.includes('/side/a') ? 'A' : 'B';
+            initializeKiosk(side);
+        });
+
+    </script>
+</body>
+</html>

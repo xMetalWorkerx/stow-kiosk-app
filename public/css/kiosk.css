@@ -1,0 +1,799 @@
+:root {
+    --amazon-blue: #232F3E;
+    --amazon-orange: #FF9900;
+    --light-blue: #1E90FF;
+    --light-grey: #f2f2f2;
+    --dark-grey: #333333;
+    --success-green: #008000;
+    --alert-red: #D32F2F;
+    
+    /* New variables for texture and gradient effects */
+    --noise-opacity: 0.03;
+    --gradient-pulse-speed: 25s;
+    --gradient-primary: rgba(35, 47, 62, 0.8);  /* Based on amazon-blue */
+    --gradient-secondary: rgba(45, 60, 80, 0.85); /* Slightly lighter blue */
+    --gradient-accent: rgba(255, 153, 0, 0.03); /* Very subtle orange accent */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+/* Subtle gradient pulse animation */
+@keyframes gradientPulse {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+body {
+    background-color: var(--amazon-blue);
+    color: white;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Gradient pulse background */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--gradient-primary) 0%, var(--gradient-secondary) 50%, var(--gradient-accent) 100%);
+    background-size: 400% 400%;
+    animation: gradientPulse var(--gradient-pulse-speed) ease infinite;
+    opacity: 0.4;
+    z-index: -1;
+}
+
+.kiosk-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    padding-left: 69px;
+    padding-right: 69px;
+    box-shadow: inset 0 25px 100px rgba(151, 158, 175, 0.123);
+    position: relative;
+    z-index: 2; /* Ensure content stays above the texture layer */
+}
+
+/* Add shine effect to header border */
+@keyframes borderShine {
+    0% { background-position: -100% 0; }
+    50% { background-position: 50% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Add ambient glow pulse to header */
+@keyframes headerGlow {
+    0% { box-shadow: 0 2px 15px rgba(255, 153, 0, 0.1); }
+    33% { box-shadow: 0 2px 15px rgba(30, 144, 255, 0.15); }
+    66% { box-shadow: 0 2px 15px rgba(255, 153, 0, 0.2); }
+    100% { box-shadow: 0 2px 15px rgba(255, 153, 0, 0.1); }
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    position: relative;
+    z-index: 3;
+    animation: headerGlow 8s ease-in-out infinite;
+}
+
+.header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        var(--light-blue) 15%,
+        var(--amazon-orange) 35%, 
+        var(--amazon-orange) 65%,
+        var(--light-blue) 85%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: borderShine 15s ease-in-out infinite;
+}
+
+/* Add subtle "digital signal" line to header */
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right,
+        transparent 0%,
+        rgba(30, 144, 255, 0.1) 10%,
+        rgba(30, 144, 255, 0.3) 20%,
+        rgba(255, 153, 0, 0.3) 40%,
+        transparent 50%,
+        rgba(255, 153, 0, 0.3) 60%,
+        rgba(30, 144, 255, 0.3) 80%,
+        rgba(30, 144, 255, 0.1) 90%,
+        transparent 100%
+    );
+    opacity: 0.5;
+}
+
+/* Stylize the side title (replacing the logo) with pure Amazon orange */
+.logo {
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--amazon-orange);
+    padding-left: 10px;
+    text-shadow: 0 0 5px rgba(255, 153, 0, 0.6);
+    letter-spacing: 1px;
+    position: relative;
+    flex: 1;
+}
+
+#side-title {
+    color: var(--amazon-orange);
+    -webkit-text-fill-color: var(--amazon-orange);
+    text-shadow: 0 0 10px rgba(255, 153, 0, 0.5);
+    animation: sideTitlePulse 4s ease-in-out infinite;
+    font-family: "Alfa Slab One", Arial, sans-serif;
+}
+
+/* Pulsing animation for side title */
+@keyframes sideTitlePulse {
+    0% { text-shadow: 0 0 15px rgba(255, 153, 0, 0.4); }
+    50% { text-shadow: 0 0 20px rgba(255, 153, 0, 0.8); }
+    100% { text-shadow: 0 0 15px rgba(255, 153, 0, 0.4); }
+}
+
+.status-info {
+    display: flex;
+    align-items: center;
+    font-size: 1.2rem;
+    padding: 5px 12px;
+    padding-right: 0px;
+    margin-right: 23px;
+    margin-left: -23px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, 
+        rgba(35, 47, 62, 0.5) 0%, 
+        rgba(35, 47, 62, 0.3) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+}
+
+/* Add subtle light sweep across status info */
+.status-info::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right, 
+        transparent 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%);
+    animation: lightSweep 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes lightSweep {
+    0% { left: -100%; }
+    40% { left: 100%; }
+    100% { left: 100%; }
+}
+
+/* Animate the status dot subtly */
+@keyframes statusPulse {
+    0% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.9; }
+}
+
+.status-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background-color: var(--success-green);
+    margin-right: 10px;
+    position: relative;
+    animation: statusPulse 4s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(0, 128, 0, 0.5);
+}
+
+/* Add glow effect to status dot */
+.status-dot::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+        rgba(0, 128, 0, 0.6) 0%,
+        transparent 70%);
+    opacity: 0.6;
+    z-index: -1;
+    animation: statusPulse 4s ease-in-out infinite;
+}
+
+.timestamp {
+    margin-left: 20px;
+    color: var(--light-grey);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    position: relative;
+    padding-left: 20px;
+    padding-right: 20px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Add subtle clock icon to timestamp */
+.timestamp::before {
+    content: '🕒';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* Legend styling - updated for header position */
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    position: relative;
+    z-index: 10;
+    flex: 2;
+    margin: 0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    padding: 6px 14px;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.legend-item::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+.legend-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.active-queue-legend {
+    background-color: var(--light-blue);
+    box-shadow: 
+        0 0 18px rgba(30, 144, 255, 0.5),
+        inset 0 0 42px rgba(255, 255, 255, 0.1);
+    animation: legendPulseBlue 4s ease-in-out infinite;
+}
+
+.problem-solver-legend {
+    background-color: var(--amazon-orange);
+    box-shadow: 
+        0 0 18px rgba(255, 153, 0, 0.5),
+        inset 0 0 42px rgba(255, 255, 255, 0.1);
+    animation: legendPulseOrange 4s ease-in-out infinite;
+}
+
+@keyframes legendPulseBlue {
+    0% { box-shadow: 0 0 18px rgba(30, 144, 255, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+    50% { box-shadow: 0 0 22px rgba(30, 144, 255, 0.6), inset 0 0 42px rgba(255, 255, 255, 0.15); }
+    100% { box-shadow: 0 0 18px rgba(30, 144, 255, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+}
+
+@keyframes legendPulseOrange {
+    0% { box-shadow: 0 0 18px rgba(255, 153, 0, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+    50% { box-shadow: 0 0 22px rgba(255, 153, 0, 0.6), inset 0 0 42px rgba(255, 255, 255, 0.15); }
+    100% { box-shadow: 0 0 18px rgba(255, 153, 0, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 42px;
+}
+
+.level {
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding-bottom: 23px;
+    padding-top: 35px;
+    padding-left: 80px;
+    padding-right: 90px;
+    margin-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.level:nth-child(1) { animation-delay: 0.1s; }
+.level:nth-child(2) { animation-delay: 0.2s; }
+.level:nth-child(3) { animation-delay: 0.3s; }
+
+.level-title {
+    position: absolute;
+    top: -13px;
+    left: 20px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--amazon-orange);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background-color: var(--dark-grey);
+    padding: 4px 16px;
+    border-radius: 4px;
+    font-family: "Arial Black", Arial, sans-serif;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    border-left: 4px solid var(--amazon-orange);
+    border-bottom: 1px solid rgba(255, 153, 0, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.level-title::after {
+    display: none;
+}
+
+.stations {
+    display: flex;
+    justify-content: space-between;
+    gap: 100px;
+}
+
+.station {
+    flex: 1;
+    background-color: var(--dark-grey);
+    border-radius: 8px;
+    padding: 20px 10px;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 400px;
+    margin: 0 auto;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 4px 8px rgba(0, 0, 0, 0.4), 
+        inset 0 0 42px rgba(255, 255, 255, 0.05),
+        0 0 2px rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    backdrop-filter: blur(1px);
+    /* Always maintain transform-origin for smooth scaling */
+    transform-origin: center center;
+    /* Add transition for state changes */
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), 
+                background-color 0.5s ease-in-out,
+                border-color 0.5s ease-in-out;
+    cursor: pointer; /* Show pointer cursor on hover */
+}
+
+.station:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Add click animation */
+.station:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    transition: all 0.1s ease-in-out;
+}
+
+/* Animation to bring active stations back to normal size after click */
+@keyframes clickRebound {
+    0% { transform: scale(0.98); }
+    50% { transform: scale(1.07); }
+    100% { transform: scale(1.05); }
+}
+
+.station-active-queue:active, .station-problem-solver:active, .station-both:active {
+    animation: none;
+    transform: scale(0.98);
+}
+
+.station-active-queue:active ~ *, .station-problem-solver:active ~ *, .station-both:active ~ * {
+    animation-play-state: paused;
+}
+
+/* When active station is released after click */
+.station-active-queue.clicked, .station-problem-solver.clicked, .station-both.clicked {
+    animation: clickRebound 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}
+
+/* Add subtle ambient glow to all stations */
+.station::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    filter: blur(0.5px);
+}
+
+.station::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.3), transparent);
+    z-index: 1;
+}
+
+/* Add subtle pulsing animation to station numbers */
+@keyframes numberGlow {
+    0% { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); }
+    50% { text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7), 0 0 10px rgba(255, 255, 255, 0.1); }
+    100% { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); }
+}
+
+.station-number {
+    font-family: "Alfa Slab One", serif;
+    font-weight: 200;
+    font-style: normal;
+    font-size: 4.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    animation: numberGlow 4s ease-in-out infinite;
+    position: relative;
+    z-index: 2;
+}
+
+/* Add subtle data flow animation for active stations */
+@keyframes dataFlow {
+    0% { opacity: 0; transform: translateY(0); }
+    50% { opacity: 0.05; }
+    100% { opacity: 0; transform: translateY(-120px); }
+}
+
+/* Enhanced station styling for active stations */
+.station-active-queue, .station-problem-solver, .station-both {
+    position: relative;
+    overflow: hidden;
+}
+
+.station-active-queue::before, .station-problem-solver::before, .station-both::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 200%;
+    top: 100%;
+    left: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 2px,
+        transparent 10px
+    );
+    animation: dataFlow 8s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Update active queue station with animations */
+.station-active-queue {
+    background-color: var(--light-blue);
+    transform: scale(1.05);
+    box-shadow: 
+        0 0 18px rgba(30, 144, 255, 0.7), 
+        inset 0 0 42px rgba(255, 255, 255, 0.15),
+        0 0 3px rgba(30, 144, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+    animation: 
+        stationActivate 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+        stationPulse 4s ease-in-out infinite 0.7s,
+        borderFlicker 8s ease-in-out infinite 1s;
+}
+
+/* Update problem solver station with animations */
+.station-problem-solver {
+    background-color: var(--amazon-orange);
+    transform: scale(1.05);
+    box-shadow: 
+        0 0 18px rgba(255, 153, 0, 0.7), 
+        inset 0 0 42px rgba(255, 255, 255, 0.15),
+        0 0 3px rgba(255, 153, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+    animation: 
+        stationActivate 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+        stationPulseProblem 4s ease-in-out infinite 0.7s,
+        borderFlicker 8s ease-in-out infinite 1s;
+}
+
+/* Update both-state station with animations */
+.station-both {
+    background: linear-gradient(135deg, var(--light-blue) 0%, var(--light-blue) 50%, var(--amazon-orange) 50%, var(--amazon-orange) 100%);
+    transform: scale(1.05);
+    box-shadow: 
+        0 0 18px rgba(255, 153, 0, 0.7), 
+        0 0 18px rgba(30, 144, 255, 0.7),
+        inset 0 0 42px rgba(255, 255, 255, 0.15),
+        0 0 3px rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.4);
+    animation: 
+        stationActivate 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+        stationPulseBoth 4s ease-in-out infinite 0.7s,
+        borderFlicker 8s ease-in-out infinite 1s;
+}
+
+/* Cute badge animation for state changes */
+@keyframes badgePop {
+    0% { opacity: 0; transform: scale(0.5); }
+    70% { opacity: 1; transform: scale(1.2); }
+    85% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+
+/* State change badges */
+.station-active-queue::before, 
+.station-problem-solver::before, 
+.station-both::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 200%;
+    top: 100%;
+    left: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 2px,
+        transparent 10px
+    );
+    animation: dataFlow 8s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Arrow animations */
+@keyframes arrowBounce {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+    100% { transform: translateY(0); }
+}
+
+@keyframes arrowAppear {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.station-arrow {
+    font-family: "Alfa Slab One", serif;
+    font-weight: 900;
+    font-size: 2.6rem;
+    margin: 0 0px;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.42);
+    animation: arrowAppear 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.arrow-up::before {
+    content: "  ↑";
+    display: inline-block;
+    animation: arrowBounce 2s ease-in-out infinite;
+}
+
+.arrow-down::before {
+    content: "↓  ";
+    display: inline-block;
+    animation: arrowBounce 2s ease-in-out infinite;
+}
+
+.loading {
+    font-size: 1.5rem;
+    text-align: center;
+    margin: 50px 0;
+    color: var(--light-grey);
+}
+
+/* Add subtle fade-in effect to elements when page loads */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Micro-interactions for station state changes */
+@keyframes stationActivate {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.07); }
+    60% { transform: scale(1.05); }
+    75% { transform: scale(1.06); }
+    100% { transform: scale(1.05); }
+}
+
+@keyframes stationPulse {
+    0% { box-shadow: 0 0 18px rgba(30, 144, 255, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+    50% { box-shadow: 0 0 22px rgba(30, 144, 255, 0.7), inset 0 0 42px rgba(255, 255, 255, 0.2); }
+    100% { box-shadow: 0 0 18px rgba(30, 144, 255, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+}
+
+@keyframes stationPulseProblem {
+    0% { box-shadow: 0 0 18px rgba(255, 153, 0, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+    50% { box-shadow: 0 0 22px rgba(255, 153, 0, 0.7), inset 0 0 42px rgba(255, 255, 255, 0.2); }
+    100% { box-shadow: 0 0 18px rgba(255, 153, 0, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+}
+
+@keyframes stationPulseBoth {
+    0% { box-shadow: 0 0 18px rgba(255, 153, 0, 0.4), 0 0 18px rgba(30, 144, 255, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+    50% { box-shadow: 0 0 22px rgba(255, 153, 0, 0.7), 0 0 22px rgba(30, 144, 255, 0.7), inset 0 0 42px rgba(255, 255, 255, 0.2); }
+    100% { box-shadow: 0 0 18px rgba(255, 153, 0, 0.4), 0 0 18px rgba(30, 144, 255, 0.4), inset 0 0 42px rgba(255, 255, 255, 0.1); }
+}
+
+@keyframes borderFlicker {
+    0% { border-color: rgba(255, 255, 255, 0.3); }
+    25% { border-color: rgba(255, 255, 255, 0.5); }
+    50% { border-color: rgba(255, 255, 255, 0.4); }
+    75% { border-color: rgba(255, 255, 255, 0.5); }
+    100% { border-color: rgba(255, 255, 255, 0.4); }
+}
+
+/* Footer styling with light blue accents to match header */
+.footer {
+    margin-top: 20px;
+    border-top: 2px solid rgba(30, 144, 255, 0.4);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 15px 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 15px rgba(30, 144, 255, 0.1);
+}
+
+/* Remove the animated gradient line from the top of footer */
+.footer::before {
+    display: none;
+}
+
+.safety-message {
+    font-size: 1.5rem;
+    color: var(--light-grey);
+    font-weight: 600;
+    animation: fadeInOut 10s infinite;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    position: relative;
+    padding-left: 30px;
+}
+
+.safety-message::before {
+    content: '⚠️';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+}
+
+.refresh-info {
+    font-size: 1.1rem;
+    color: var(--light-grey);
+    padding: 5px 10px;
+    border-radius: 4px;
+    background-color: rgba(35, 47, 62, 0.6);
+    border: 1px solid rgba(30, 144, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 10px rgba(30, 144, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Add subtle pulsing effect to countdown */
+#countdown {
+    color: var(--light-blue);
+    font-weight: bold;
+    margin: 0 4px;
+    position: relative;
+    animation: countdownPulse 1s linear infinite;
+}
+
+@keyframes countdownPulse {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { opacity: 0.8; }
+}
+
+@keyframes fadeInOut {
+    0% {opacity: 0.7;}
+    20% {opacity: 1;}
+    80% {opacity: 1;}
+    100% {opacity: 0.7;}
+}
+
+/* Flash animation for state changes */
+@keyframes flashFade {
+    0% { opacity: 0.7; }
+    100% { opacity: 0; }
+}
+
+/* Fix for gradient radial backgrounds */
+.station-active-queue::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    background: radial-gradient(circle, rgba(30, 144, 255, 0.1) 0%, transparent 70%);
+    z-index: -1;
+}
+
+.station-problem-solver::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    background: radial-gradient(circle, rgba(255, 153, 0, 0.1) 0%, transparent 70%);
+    z-index: -1;
+}
+
+.station-both::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+    z-index: -1;
+}
