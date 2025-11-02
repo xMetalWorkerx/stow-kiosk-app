@@ -9,7 +9,8 @@
     "setup": "node scripts/setup-db.js",
     "seed": "node scripts/seed-data.js",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "dummy-data": "node dummy-data-server.js"
   },
   "dependencies": {
     "axios": "^0.24.0",
@@ -21,7 +22,8 @@
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
     "node-cron": "^3.0.2",
-    "sqlite3": "^5.0.2"
+    "sqlite3": "^5.1.7",
+    "ws": "^8.8.1"
   },
   "devDependencies": {
     "jest": "^29.5.0",

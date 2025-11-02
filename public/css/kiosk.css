@@ -82,9 +82,11 @@ body::after {
 
 .header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    padding: 10px 0;
+    padding: 15px 20px;
+    background-color: var(--dark-grey);
+    border-bottom: 1px solid var(--amazon-blue);
     position: relative;
     z-index: 3;
     animation: headerGlow 8s ease-in-out infinite;
@@ -133,14 +135,14 @@ body::after {
 
 /* Stylize the side title (replacing the logo) with pure Amazon orange */
 .logo {
-    font-size: 3rem;
+    font-size: 1.8rem;
     font-weight: bold;
     color: var(--amazon-orange);
+    text-align: center;
     padding-left: 10px;
     text-shadow: 0 0 5px rgba(255, 153, 0, 0.6);
     letter-spacing: 1px;
     position: relative;
-    flex: 1;
 }
 
 #side-title {

@@ -5,6 +5,10 @@ let countdownInterval = null;
 let countdownValue = 60;
 // Add a new variable to store previous station states
 let stationStates = {};
+// WebSocket connection
+let ws = null;
+// Connection status
+let isConnected = false;
 
 // Initialize the kiosk with the specified side
 function initializeKiosk(side) {
@@ -31,6 +35,139 @@ function initializeKiosk(side) {
     
     // Add click event handler for stations
     setupStationClickHandlers();
+    
+    // Initialize WebSocket connection
+    initializeWebSocket();
+}
+
+// Initialize WebSocket connection
+function initializeWebSocket() {
+    // Close existing connection if any
+    if (ws) {
+        ws.close();
+    }
+    
+    // Create a new WebSocket connection
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    
+    // Connection opened
+    ws.addEventListener('open', (event) => {
+        console.log('WebSocket connection established');
+        isConnected = true;
+        updateConnectionStatus(true);
+    });
+    
+    // Listen for messages
+    ws.addEventListener('message', (event) => {
+        console.log('WebSocket message received:', event.data);
+        try {
+            const message = JSON.parse(event.data);
+            handleWebSocketMessage(message);
+        } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+        }
+    });
+    
+    // Connection closed
+    ws.addEventListener('close', (event) => {
+        console.log('WebSocket connection closed');
+        isConnected = false;
+        updateConnectionStatus(false);
+        
+        // Try to reconnect after a delay
+        setTimeout(initializeWebSocket, 5000);
+    });
+    
+    // Connection error
+    ws.addEventListener('error', (event) => {
+        console.error('WebSocket error:', event);
+        isConnected = false;
+        updateConnectionStatus(false);
+    });
+}
+
+// Handle WebSocket messages
+function handleWebSocketMessage(message) {
+    if (message.type === 'stationUpdate') {
+        updateStationUI(message.data);
+    } else if (message.type === 'info') {
+        console.log('WebSocket info:', message.message);
+    }
+}
+
+// Update station UI from WebSocket data
+function updateStationUI(data) {
+    // Check if the station is on the current side
+    if (data.side !== currentSide) {
+        return;
+    }
+    
+    const stationId = `${data.level}-${data.station_number}`;
+    const stationElement = document.getElementById(stationId);
+    
+    if (stationElement) {
+        console.log(`Updating station ${stationId} via WebSocket with status: ${data.status}, end: ${data.end_indicator}`);
+        
+        // Remove existing classes
+        stationElement.classList.remove('station-active-queue', 'station-problem-solver', 'station-both', 'station-inactive');
+        
+        // Determine new state to apply
+        let newState = null;
+        let status = data.status;
+        
+        // Normalize status format for display
+        if (status === 'AQ+PS' || (status === 'AQ' && data.secondary_status === 'PS')) {
+            newState = 'station-both';
+        } else if (status === 'AQ') {
+            newState = 'station-active-queue';
+        } else if (status === 'PS') {
+            newState = 'station-problem-solver';
+        } else {
+            newState = 'station-inactive';
+        }
+        
+        // Apply the new state
+        stationElement.classList.add(newState);
+        
+        // Update the end indicator if applicable
+        const stationNumber = stationElement.querySelector('.station-number');
+        if (stationNumber) {
+            // Clear any existing content
+            while (stationNumber.firstChild) {
+                stationNumber.removeChild(stationNumber.firstChild);
+            }
+            
+            // Add back just the number
+            const number = data.station_number;
+            stationNumber.textContent = number;
+            
+            // Add end indicator if station is active
+            if (newState !== 'station-inactive') {
+                const arrow = document.createElement('span');
+                arrow.className = 'end-indicator';
+                arrow.textContent = data.end_indicator === 'Hi' ? '↑' : '↓';
+                stationNumber.appendChild(arrow);
+            }
+        }
+        
+        // Update the stored state
+        stationStates[stationId] = newState;
+        
+        // Highlight the station as recently updated
+        stationElement.classList.add('updated');
+        setTimeout(() => {
+            stationElement.classList.remove('updated');
+        }, 2000);
+    }
+}
+
+// Update connection status indicator
+function updateConnectionStatus(connected) {
+    const statusDot = document.querySelector('.status-dot');
+    if (statusDot) {
+        statusDot.style.backgroundColor = connected ? 'var(--success-green)' : 'var(--error-red)';
+        statusDot.title = connected ? 'Connected' : 'Disconnected - Attempting to reconnect...';
+    }
 }
 
 // Add click handlers for stations
@@ -148,7 +285,7 @@ function updateTimestamp() {
 // Load stations data for the current side and update the fixed grid
 function loadStations() {
     // Set status dot to normal color
-    document.querySelector('.status-dot').style.backgroundColor = 'var(--success-green)';
+    updateConnectionStatus(isConnected);
     
     // Use the currentSide variable
     console.log('Loading stations for side:', currentSide);
@@ -198,87 +335,41 @@ function loadStations() {
                     // Normalize status format for display - handling both separate statuses and combined formats
                     if (status === 'AQ+PS' || (status === 'AQ' && station.secondary_status === 'PS')) {
                         newState = 'station-both';
-                        stationElement.classList.add('station-both');
                     } else if (status === 'AQ') {
                         newState = 'station-active-queue';
-                        stationElement.classList.add('station-active-queue');
                     } else if (status === 'PS') {
                         newState = 'station-problem-solver';
-                        stationElement.classList.add('station-problem-solver');
+                    } else {
+                        newState = 'station-inactive';
                     }
                     
-                    // Store the current state in our global tracking object
-                    stationStates[stationId] = {
-                        status: status,
-                        endIndicator: station.end_indicator,
-                        state: newState
-                    };
+                    // Apply the new state class
+                    stationElement.classList.add(newState);
                     
-                    // Check if state has changed and apply transition effect
-                    const previousState = previousStates[stationId] || {};
-                    const hasStateChanged = 
-                        (newState !== previousState.state) || 
-                        (station.end_indicator !== previousState.endIndicator);
+                    // Check if this is a change from previous state
+                    const previousState = previousStates[stationId];
+                    const hasChanged = previousState !== newState;
                     
-                    if (hasStateChanged && newState) {
-                        // Reset animations by temporarily removing the class
-                        stationElement.classList.remove(newState);
-                        
-                        // Apply a subtle highlight effect to draw attention
-                        stationElement.style.transition = 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
-                        
-                        // Use setTimeout to ensure the browser notices the class removal
-                        setTimeout(() => {
-                            stationElement.classList.add(newState);
-                            
-                            // Create a flash effect for state change
-                            const flashOverlay = document.createElement('div');
-                            flashOverlay.className = 'state-change-flash';
-                            flashOverlay.style.position = 'absolute';
-                            flashOverlay.style.top = '0';
-                            flashOverlay.style.left = '0';
-                            flashOverlay.style.width = '100%';
-                            flashOverlay.style.height = '100%';
-                            flashOverlay.style.borderRadius = '8px';
-                            flashOverlay.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
-                            flashOverlay.style.opacity = '0';
-                            flashOverlay.style.pointerEvents = 'none';
-                            flashOverlay.style.zIndex = '5';
-                            flashOverlay.style.animation = 'flashFade 0.7s ease-out forwards';
-                            
-                            stationElement.appendChild(flashOverlay);
-                            
-                            // Remove the flash overlay after animation completes
-                            setTimeout(() => {
-                                if (stationElement.contains(flashOverlay)) {
-                                    stationElement.removeChild(flashOverlay);
-                                }
-                            }, 700);
-                        }, 50);
-                    }
+                    // Update the stored state
+                    stationStates[stationId] = newState;
                     
-                    // Add trend arrows if available
-                    if (newState) { // Only add arrows to active stations
+                    // Only active stations (non-inactive) should show end indicators
+                    if (newState !== 'station-inactive') {
                         const stationNumber = stationElement.querySelector('.station-number');
-                        if (stationNumber && status !== 'Inactive') {
-                            // Create number text node
-                            const number = stationId.split('-')[1];
-                            stationNumber.textContent = number;
-                            
-                            // Determine trend from end_indicator
-                            const trend = station.end_indicator === 'Hi' ? 'up' : 'down';
-                            
-                            if (trend === 'up') {
-                                const arrowSpan = document.createElement('span');
-                                arrowSpan.className = 'station-arrow arrow-up';
-                                stationNumber.appendChild(arrowSpan);
-                            }
-                            
-                            if (trend === 'down') {
-                                const arrowSpan = document.createElement('span');
-                                arrowSpan.className = 'station-arrow arrow-down';
-                                stationNumber.appendChild(arrowSpan);
-                            }
+                        if (stationNumber) {
+                            // Add the arrow for the end indicator
+                            const arrow = document.createElement('span');
+                            arrow.className = 'end-indicator';
+                            arrow.textContent = station.end_indicator === 'Hi' ? '↑' : '↓';
+                            stationNumber.appendChild(arrow);
+                        }
+                        
+                        // If state changed, add the 'updated' class for animation
+                        if (hasChanged) {
+                            stationElement.classList.add('updated');
+                            setTimeout(() => {
+                                stationElement.classList.remove('updated');
+                            }, 2000);
                         }
                     }
                 }
@@ -286,50 +377,6 @@ function loadStations() {
         })
         .catch(error => {
             console.error('Error loading stations:', error);
-            document.querySelector('.status-dot').style.backgroundColor = 'var(--alert-red)';
-            
-            // Use previously stored station states instead of clearing everything
-            if (Object.keys(stationStates).length > 0) {
-                console.log('Using cached station states due to error');
-                document.querySelectorAll('.station').forEach(station => {
-                    const id = station.id;
-                    const cachedState = stationStates[id];
-                    
-                    if (cachedState && cachedState.state) {
-                        // Apply the cached state class
-                        station.classList.add(cachedState.state);
-                        
-                        // Add trend arrows if needed
-                        const stationNumber = station.querySelector('.station-number');
-                        if (stationNumber && cachedState.status !== 'Inactive') {
-                            // First ensure the number is visible
-                            const number = id.split('-')[1];
-                            stationNumber.textContent = number;
-                            
-                            // Add appropriate arrow
-                            if (cachedState.endIndicator === 'Hi') {
-                                const arrowSpan = document.createElement('span');
-                                arrowSpan.className = 'station-arrow arrow-up';
-                                stationNumber.appendChild(arrowSpan);
-                            } else if (cachedState.endIndicator === 'Lo') {
-                                const arrowSpan = document.createElement('span');
-                                arrowSpan.className = 'station-arrow arrow-down';
-                                stationNumber.appendChild(arrowSpan);
-                            }
-                        }
-                    }
-                });
-            }
-            
-            document.getElementById('safety-message').textContent = 
-                `Error loading station data: ${error.message}. Retrying soon...`;
-            
-            setTimeout(loadStations, 5000); // Retry after delay
+            document.querySelector('.status-dot').style.backgroundColor = 'var(--error-red)';
         });
-    
-    // FIX #7: Frontend Assumes Backend Availability
-    if (!navigator.onLine) {
-        document.querySelector('.status-dot').style.backgroundColor = 'var(--alert-red)';
-        document.getElementById('safety-message').textContent = 'Network offline. Please check connection.';
-    }
 }

@@ -1,5 +1,19 @@
+// Global admin state management
+let adminState = {
+    stations: [],
+    safetyMessages: [],
+    activeSafetyMessage: null,
+    user: null,
+    // Add WebSocket connection state
+    ws: null,
+    isConnected: false
+};
+
 // Initialize admin dashboard
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize WebSocket connection
+    initializeWebSocket();
+    
     // Check if user is authenticated
     if (isAuthenticated()) {
         showAdminDashboard();
@@ -661,4 +675,133 @@ function hideAddMessageForm() {
         document.getElementById('message-text').value = '';
         document.getElementById('message-priority').value = 'normal';
     }, 300);
+}
+
+// WebSocket initialization
+function initializeWebSocket() {
+    // Close existing connection if any
+    if (adminState.ws) {
+        adminState.ws.close();
+    }
+    
+    // Create new WebSocket connection
+    adminState.ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    
+    // Connection opened
+    adminState.ws.addEventListener('open', (event) => {
+        console.log('[WebSocket] Connection established');
+        adminState.isConnected = true;
+        updateConnectionStatusUI(true);
+    });
+    
+    // Listen for messages
+    adminState.ws.addEventListener('message', (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            handleWebSocketMessage(message);
+        } catch (error) {
+            console.error('[WebSocket] Error parsing message:', error);
+        }
+    });
+    
+    // Connection closed
+    adminState.ws.addEventListener('close', (event) => {
+        console.log('[WebSocket] Connection closed');
+        adminState.isConnected = false;
+        updateConnectionStatusUI(false);
+        
+        // Try to reconnect with exponential backoff
+        setTimeout(initializeWebSocket, 5000);
+    });
+    
+    // Connection error
+    adminState.ws.addEventListener('error', (event) => {
+        console.error('[WebSocket] Error:', event);
+        adminState.isConnected = false;
+        updateConnectionStatusUI(false);
+    });
+}
+
+// Handle WebSocket messages
+function handleWebSocketMessage(message) {
+    // Log all messages for debugging
+    console.log('[WebSocket] Message received:', message);
+    
+    // Update UI based on message type
+    if (message.type === 'stationUpdate') {
+        // Find and update the station in our local state
+        const index = adminState.stations.findIndex(s => s.id === message.data.id);
+        if (index !== -1) {
+            adminState.stations[index] = message.data;
+            updateStationRowUI(message.data);
+        }
+        
+        // Show update notification
+        showNotification('Station Updated', `Station ${message.data.station_number} has been updated to ${message.data.status}`, 'info');
+    } else if (message.type === 'availableSpaceUpdate') {
+        // Update available space if that view is active
+        showNotification('Bin Space Updated', `Bin ${message.data.id} space updated to ${message.data.percent}%`, 'info');
+    } else if (message.type === 'safetyMessageUpdate') {
+        // Update safety messages if any
+        loadSafetyMessages(); // Reload the whole list for now
+        showNotification('Safety Message Updated', 'A safety message has been updated', 'info');
+    } else if (message.type === 'info') {
+        console.log('[WebSocket] Info:', message.message);
+    }
+}
+
+// Update connection status in the UI
+function updateConnectionStatusUI(connected) {
+    const statusIndicator = document.querySelector('.connection-status');
+    if (statusIndicator) {
+        statusIndicator.classList.toggle('connected', connected);
+        statusIndicator.classList.toggle('disconnected', !connected);
+        statusIndicator.title = connected ? 'WebSocket Connected' : 'WebSocket Disconnected - Attempting to reconnect...';
+    }
+}
+
+// Update a single station row in the UI
+function updateStationRowUI(station) {
+    const row = document.querySelector(`tr[data-station-id="${station.id}"]`);
+    if (row) {
+        // Update status cell
+        const statusCell = row.querySelector('.status-cell');
+        if (statusCell) {
+            statusCell.textContent = station.status;
+            statusCell.className = `status-cell ${station.status.toLowerCase()}`;
+        }
+        
+        // Update end indicator cell
+        const endIndicatorCell = row.querySelector('.end-indicator-cell');
+        if (endIndicatorCell) {
+            endIndicatorCell.textContent = station.end_indicator;
+        }
+        
+        // Highlight the row briefly
+        row.classList.add('updated');
+        setTimeout(() => {
+            row.classList.remove('updated');
+        }, 2000);
+    }
+}
+
+// Show a notification message
+function showNotification(title, message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <div class="notification-header">${title}</div>
+        <div class="notification-body">${message}</div>
+    `;
+    
+    const container = document.querySelector('.notification-container') || document.body;
+    container.appendChild(notification);
+    
+    // Auto-remove after a delay
+    setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => {
+            notification.remove();
+        }, 500);
+    }, 5000);
 }

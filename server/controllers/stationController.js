@@ -1,4 +1,5 @@
 const Station = require('../models/Station');
+const socketService = require('../services/socketService');
 
 // Get all stations for a specific side
 exports.getStationsBySide = async (req, res, next) => {
@@ -77,11 +78,17 @@ exports.updateStation = async (req, res, next) => {
     }
     
     console.log(`Updating station ${id} with:`, updates);
-    const updatedStation = await Station.update(id, updates);
+    const success = await Station.update(id, updates);
     
-    if (!updatedStation) {
+    if (!success) {
       return res.status(404).json({ error: 'Station not found' });
     }
+    
+    // Fetch the updated station data to return and broadcast
+    const updatedStation = await Station.findById(id);
+    
+    // Broadcast the updated station data to all connected clients
+    socketService.broadcast({ type: 'stationUpdate', data: updatedStation });
     
     console.log(`Station ${id} updated:`, updatedStation);
     res.json(updatedStation);

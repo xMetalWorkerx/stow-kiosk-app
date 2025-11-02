@@ -1,14 +1,23 @@
-require('dotenv').config();
+/*
+ * Main entry point for the Stow Kiosk backend server.
+ * Initializes Express, sets up middleware, defines routes, establishes WebSocket connections,
+ * and manages application lifecycle (startup, shutdown).
+ */
+
+require('dotenv').config(); // Load environment variables first
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
 const apiRoutes = require('./routes/api');
 const errorHandler = require('./middleware/errorHandler');
 const SchedulerService = require('./services/schedulerService');
 const db = require('./database/db');
 const SlackService = require('./services/slackService');
-const slackRoutes = require('./routes/slack'); // Import slack routes directly
+const slackRoutes = require('./routes/slack');
+const Station = require('./models/Station');
+const socketService = require('./services/socketService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,11 +30,10 @@ console.log('- Slack Reminder Channel:', process.env.SLACK_REMINDER_CHANNEL ? 'C
 console.log('- Slack Bot Token:', process.env.SLACK_BOT_TOKEN ? 'Configured ✓' : 'Not set ✗');
 console.log('- Slack Signing Secret:', process.env.SLACK_SIGNING_SECRET ? 'Configured ✓' : 'Not set ✗');
 
-// Enable CORS for all routes
-app.use(cors());
+// Middleware setup
+app.use(cors()); // Enable Cross-Origin Resource Sharing
 
-// Configure body parsers for regular routes (not Slack routes)
-// These parsers will run for all routes except the Slack routes (which we handle separately)
+// Selective body parsing: Skip for Slack routes which need raw body for verification
 app.use((req, res, next) => {
   // Skip body parsing for Slack routes, they'll use their own middleware
   if (req.path.startsWith('/api/slack')) {
@@ -58,15 +66,91 @@ app.use((req, res, next) => {
   });
 });
 
-// Handle Slack routes with their specific middleware
+// Route handlers
+// Handle Slack routes with their specific middleware (for signature verification)
 app.use('/api/slack', slackRoutes);
-
 // Handle all other API routes
 app.use('/api', apiRoutes);
 
-// Static files
+// Static file serving for the frontend
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Use the 25-aisle dummy data generator matching the frontend fallback/rendering logic
+const generateSpaceData = (floor) => {
+  const numAisles = 25;
+  const aisles = Array.from({ length: numAisles }, (_, i) => ({
+    id: i + 1, // Keep internal ID as 1-25 for now, headers are separate
+    sections: {
+      100: { top: { type: 'Library', availability: Math.floor(Math.random() * 100) },
+             middle: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) },
+             bottom: { type: 'Library', availability: Math.floor(Math.random() * 100) } },
+      200: { top: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) },
+             middle: { type: 'Library', availability: Math.floor(Math.random() * 100) },
+             bottom: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) } },
+      300: { top: { type: 'Library', availability: Math.floor(Math.random() * 100) },
+             middle: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) },
+             bottom: { type: 'Library', availability: Math.floor(Math.random() * 100) } },
+      400: { top: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) },
+             middle: { type: 'Library', availability: Math.floor(Math.random() * 100) },
+             bottom: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) } },
+      500: { top: { type: 'Library', availability: Math.floor(Math.random() * 100) },
+             middle: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) },
+             bottom: { type: 'Library', availability: Math.floor(Math.random() * 100) } },
+      600: { top: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) },
+             middle: { type: 'Library', availability: Math.floor(Math.random() * 100) },
+             bottom: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) } },
+      700: { top: { type: 'Library', availability: Math.floor(Math.random() * 100) },
+             middle: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) },
+             bottom: { type: 'Library', availability: Math.floor(Math.random() * 100) } },
+      800: { top: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) },
+             middle: { type: 'Library', availability: Math.floor(Math.random() * 100) },
+             bottom: { type: 'Library Deep', availability: Math.floor(Math.random() * 100) } },
+    }
+  }));
+
+  const emptyBins = [];
+  aisles.forEach(aisle => {
+    Object.entries(aisle.sections).forEach(([section, bins]) => {
+      ['top', 'middle', 'bottom'].forEach(position => {
+        if (bins[position].availability === 100) {
+          emptyBins.push({ aisle: aisle.id, section, position, type: bins[position].type });
+        }
+      });
+    });
+  });
+
+  const bestSections = {
+    Library: { aisle: 1, section: '100', availability: 0 },
+    'Library Deep': { aisle: 1, section: '100', availability: 0 }
+  };
+  aisles.forEach(aisle => {
+    Object.entries(aisle.sections).forEach(([section, bins]) => {
+      ['top', 'middle', 'bottom'].forEach(position => {
+        const bin = bins[position];
+        if (bestSections[bin.type] && bin.availability > bestSections[bin.type].availability) {
+          bestSections[bin.type] = { aisle: aisle.id, section, availability: bin.availability };
+        }
+      });
+    });
+  });
+
+  return { aisles, emptyBins, bestSections };
+};
+
+// API endpoint to get space data
+app.get('/api/space', (req, res) => {
+  const floor = req.query.floor || '1'; // Get floor from query param
+  console.log(`API Request: /api/space?floor=${floor}`); // Log the request
+  try {
+      const spaceData = generateSpaceData(floor);
+      res.json(spaceData); // Send the generated data
+  } catch (error) {
+      console.error("Error generating space data:", error);
+      res.status(500).json({ error: 'Failed to generate space data' });
+  }
+});
+
+// Frontend Routes
 // Serve index page for root path
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
@@ -82,14 +166,27 @@ app.get('/side/:side', (req, res) => {
   }
 });
 
-// Admin page
+// New screen routes
+app.get('/carousel/:floor', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/carousel.html'));
+});
+
+app.get('/available-space/:floor', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/available-space.html'));
+});
+
+app.get('/stow-tip', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/stow-tip.html'));
+});
+
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
-// Error handler middleware
+// Global error handler
 app.use(errorHandler);
 
+// Service Initialization
 // Initialize the SlackService if token is available
 let slackService = null;
 if (process.env.SLACK_BOT_TOKEN) {
@@ -103,7 +200,7 @@ if (process.env.SLACK_BOT_TOKEN) {
   console.warn('SLACK_BOT_TOKEN not set; SlackService not initialized');
 }
 
-// Initialize scheduler if SLACK_REMINDER_CHANNEL is valid
+// Initialize scheduler if SLACK_REMINDER_CHANNEL is valid and SlackService is up
 let schedulerService = null;
 if (slackService && process.env.SLACK_REMINDER_CHANNEL && /^C[0-9A-Z]{8,}$/.test(process.env.SLACK_REMINDER_CHANNEL)) {
   try {
@@ -119,12 +216,19 @@ if (slackService && process.env.SLACK_REMINDER_CHANNEL && /^C[0-9A-Z]{8,}$/.test
   console.log('SLACK_REMINDER_CHANNEL not set; scheduler not started.');
 }
 
-const server = app.listen(PORT, '0.0.0.0', () => {
+// Start the HTTP server
+const server = http.createServer(app);
+
+// Initialize WebSocket server using socketService
+const wss = socketService.init(server);
+
+// Start the server
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Local URL: http://localhost:${PORT}`);
 });
 
-// Gracefully close database connection on application shutdown
+// Graceful Shutdown Handling
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down...');
   
@@ -135,9 +239,9 @@ process.on('SIGTERM', async () => {
       schedulerService.stopReminders(channel);
     }
   }
-  
-  server.close(async () => {
-    await db.close();
+  wss.close(); // Close WebSocket server
+  server.close(async () => { // Close HTTP server
+    await db.close(); // Close database connection
     console.log('Database connection closed');
     process.exit(0);
   });
@@ -153,9 +257,9 @@ process.on('SIGINT', async () => {
       schedulerService.stopReminders(channel);
     }
   }
-  
-  server.close(async () => {
-    await db.close();
+  wss.close(); // Close WebSocket server
+  server.close(async () => { // Close HTTP server
+    await db.close(); // Close database connection
     console.log('Database connection closed');
     process.exit(0);
   });

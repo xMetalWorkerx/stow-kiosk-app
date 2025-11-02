@@ -9,6 +9,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Rajdhani:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        .additional-link-button {
+            display: inline-block;
+            padding: 8px 15px;
+            background-color: var(--amazon-blue);
+            color: var(--light-grey);
+            text-decoration: none;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+        }
+        .additional-link-button:hover {
+            background-color: #303f50; /* Slightly lighter blue */
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .additional-link-button:active {
+            transform: translateY(0px);
+            background-color: #1a2430; /* Darker blue */
+        }
+    </style>
 </head>
 <body>
     <div class="landing-container">
@@ -34,6 +57,16 @@
         
         <div class="admin-link">
             <a href="/admin" target="_blank">Admin Dashboard</a>
+        </div>
+
+        <div class="additional-links-container" style="margin-top: 30px; text-align: center; padding: 15px; background-color: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h3 style="margin-bottom: 15px; color: var(--light-grey); font-weight: 500;">Additional Screens</h3>
+            <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px;">
+                <a href="/stow-tip" target="_blank" class="additional-link-button">Stow Quality Tips</a>
+                <a href="/carousel/1" target="_blank" class="additional-link-button">Queue Carousel (F1)</a>
+                <a href="/available-space-static.html" target="_blank" class="additional-link-button">Available Space (F1)</a>
+            </div>
+            <p style="font-size: 0.8em; color: #ccc; margin-top: 10px;">(Floor number can be changed in the URL for Carousel/Space screens)</p>
         </div>
         
         <div class="footer-info">

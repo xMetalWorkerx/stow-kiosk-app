@@ -17,7 +17,7 @@ function seedStations() {
     const sideAStations = [];
     
     // Level 1
-    [123, 149, 175, 215].forEach(num => {
+    [123, 149, 175, 203].forEach(num => {
         sideAStations.push({
             side: 'A',
             level: 1,
@@ -28,7 +28,7 @@ function seedStations() {
     });
     
     // Level 2
-    [123, 149, 175, 215].forEach(num => {
+    [123, 149, 175, 203].forEach(num => {
         sideAStations.push({
             side: 'A',
             level: 2,
@@ -39,7 +39,7 @@ function seedStations() {
     });
     
     // Level 3
-    [123, 149, 175, 215].forEach(num => {
+    [123, 149, 175, 203].forEach(num => {
         sideAStations.push({
             side: 'A',
             level: 3,

@@ -1,0 +1,88 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!--
+  Relative Path: Stow Kiosk/public/available-space.html
+
+  Implementation Instructions:
+  1. Place this file in the `public` directory as `available-space.html`.
+  2. Ensure `public/css/kiosk.css` and `public/js/utilities.js` exist and are accessible.
+  3. The page is accessible at `http://localhost:3000/available-space/:floor` (e.g., `/available-space/1`).
+  4. Requires WebSocket support in `server/index.js` to monitor Active Queue status.
+  5. The screen fetches data from `http://localhost:3001/api/space` (dummy server) or generates random data if the server is down.
+  6. Start the dummy server with `npm run dummy-data` for server-based data, or test the fallback by stopping the dummy server.
+  7. Verify the screen displays 12 aisles, sections (100-800), bins, empty bins, and best sections, updating every 15 minutes (AQ present) or 1 hour (no AQ).
+-->
+<!--
+  Available Space Screen
+  Displays available bin space information for a specific floor.
+  - Fetches data from a dummy server (`http://localhost:3001/api/space`) or generates random fallback data.
+  - Uses WebSocket to monitor Active Queue status on the floor, adjusting the data refresh interval.
+  - Refresh interval: 15 minutes if AQ stations are present, 1 hour otherwise.
+  - Displays aisles, sections, bin availability, nearby empty bins, and best sections.
+  - Requires `kiosk.css` for styling.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Available Space - P-1-B 123</title>
+  <link rel="stylesheet" href="/css/kiosk.css">
+  <link rel="stylesheet" href="/css/available-space.css">
+</head>
+<body>
+  <div class="kiosk-container available-space-page">
+    <div class="header">
+      <div class="logo">
+        <span id="side-title">P-1-B 123</span>
+      </div>
+    </div>
+    <div class="content available-space-content">
+      <div id="space-grid-container"></div>
+      <div class="additional-info-container" style="display: flex; gap: 20px; margin-top: 20px;">
+        <div class="empty-bins info-box" id="empty-bins"></div>
+        <div class="best-sections info-box" id="best-sections"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/available-space.js"></script>
+</body>
+</html> 

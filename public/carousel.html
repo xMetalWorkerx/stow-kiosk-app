@@ -1,0 +1,190 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!--
+  Relative Path: Stow Kiosk/public/carousel.html
+
+  Implementation Instructions:
+  1. Place this file in the `public` directory as `carousel.html`.
+  2. Ensure `public/css/kiosk.css` and `public/js/utilities.js` exist and are accessible.
+  3. The page is accessible at `http://localhost:3000/carousel/:floor` (e.g., `/carousel/1`).
+  4. Requires WebSocket support in `server/index.js` and `findByFloor` in `server/models/Station.js`.
+  5. Verify the carousel displays active stations (AQ or PS) and cycles every 5 seconds.
+  6. The screen uses styles from `kiosk.css` for consistency with other kiosk displays.
+-->
+<!--
+  Queue Carousel Screen
+  Displays active stations (AQ or PS) for a specific floor in a rotating carousel.
+  - Receives real-time station updates via WebSocket.
+  - Filters for stations on the specified floor.
+  - Cycles through active stations every 5 seconds.
+  - Requires `kiosk.css` for styling.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Queue Carousel</title>
+  <link rel="stylesheet" href="/css/kiosk.css">
+  <style>
+    .carousel-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    .carousel {
+      width: 100%;
+      max-width: 800px;
+      overflow: hidden;
+      position: relative;
+    }
+    .carousel-track {
+      display: flex;
+      transition: transform 0.5s ease-in-out;
+    }
+    .carousel-item {
+      flex: 0 0 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      min-height: 300px;
+    }
+    .carousel-item .station {
+      width: 100%;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+  <div class="kiosk-container">
+    <div class="header">
+      <div class="logo">
+        <span id="side-title">Floor <span id="floor-number"></span> Queue</span>
+      </div>
+      <div class="legend">
+        <div class="legend-item active-queue-legend">Active Queue</div>
+        <div class="legend-item problem-solver-legend">Problem Solver</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="carousel-container">
+        <div class="carousel">
+          <div class="carousel-track" id="carousel-track"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get floor number from URL query parameter (default to 1)
+    const floor = new URLSearchParams(window.location.search).get('floor') || '1';
+    document.getElementById('floor-number').textContent = floor;
+
+    // Establish WebSocket connection for this floor
+    const ws = new WebSocket(`ws://${window.location.host}?floor=${floor}`);
+    let stations = []; // Holds the station data for this floor
+
+    // Handle incoming WebSocket messages
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      // Check if the message contains station data
+      if (message.type === 'stations') {
+        // Filter out inactive stations
+        stations = message.data.filter(s => s.status !== 'Inactive');
+        updateCarousel(); // Update the display
+      }
+    };
+
+    // Function to render the carousel with current station data
+    function updateCarousel() {
+      const track = document.getElementById("carousel-track");
+      track.innerHTML = '';
+      if (stations.length === 0) {
+        track.innerHTML = '<div class="carousel-item">No active stations</div>';
+        return;
+      }
+      stations.forEach((station, index) => {
+        const item = document.createElement('div');
+        item.className = 'carousel-item';
+        const stationDiv = document.createElement('div');
+        stationDiv.className = `station station-${station.status.toLowerCase()}`;
+        stationDiv.innerHTML = `
+          <div class="station-number">${station.station_number}</div>
+          <div class="station-arrow ${station.end_indicator.toLowerCase()}"></div>
+        `;
+        item.appendChild(stationDiv);
+        track.appendChild(item);
+      });
+
+      let currentIndex = 0;
+      // Clear any existing interval to avoid duplicates if updateCarousel is called rapidly
+      if (window.carouselInterval) clearInterval(window.carouselInterval);
+      
+      // Start the carousel rotation if there are stations to show
+      if (stations.length > 0) {
+          window.carouselInterval = setInterval(() => {
+          currentIndex = (currentIndex + 1) % stations.length;
+          // Move the track to show the next item
+          track.style.transform = `translateX(-${currentIndex * 100}%)`;
+        }, 5000); // Rotate every 5 seconds
+      }
+    }
+
+    // Handle WebSocket errors
+    ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+        // Optionally display an error message on the screen
+    };
+
+    // Handle WebSocket connection closing
+    ws.onclose = () => {
+        console.log('WebSocket connection closed. Attempting to reconnect...');
+        // Implement reconnection logic if desired
+    };
+
+  </script>
+</body>
+</html> 

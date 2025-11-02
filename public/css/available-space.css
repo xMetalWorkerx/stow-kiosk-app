@@ -1,0 +1,262 @@
+/* available-space.css - Rewritten for Table-like Grid Layout */
+
+:root {
+    --grid-border-color: rgba(255, 255, 255, 0.2);
+    --grid-header-bg: var(--dark-grey);
+    --grid-cell-bg: var(--amazon-blue);
+    --grid-cell-hover-bg: rgba(255, 255, 255, 0.1);
+    --bin-color-red: #F44336; /* Material Red */
+    --bin-color-yellow: #FFEB3B; /* Material Yellow */
+    --bin-color-green: #4CAF50; /* Material Green */
+    --bin-color-unknown: #9E9E9E; /* Material Grey */
+}
+
+.available-space-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent content overflow issues */
+}
+
+#space-grid-container {
+    display: grid;
+    /* Define 1 auto column for section headers + 1 column per aisle */
+    grid-template-columns: auto repeat(var(--num-aisles, 12), 1fr); 
+    background-color: var(--grid-cell-bg); 
+    border: 1px solid var(--grid-border-color);
+    border-radius: 4px;
+    overflow: auto; /* Add scrollbars if content overflows */
+    flex-grow: 1; /* Allow grid to take up space */
+    font-family: 'Roboto Mono', monospace; /* Monospace font for numbers */
+    font-size: 0.8rem; /* Base font size for grid */
+}
+
+/* Direct Descendant Rows (Headers and Data) */
+#space-grid-container > div {
+    display: contents; /* Make children direct grid items */
+}
+
+/* Add this rule for the data rows */
+.grid-data-row {
+    display: contents; /* Treat children as direct grid items */
+}
+
+/* General Cell Styling */
+.grid-cell {
+    padding: 5px 4px; /* Reduced padding */
+    text-align: center;
+    border-right: 1px solid var(--grid-border-color);
+    border-bottom: 1px solid var(--grid-border-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 25px; /* Reduced height */
+    line-height: 1.2;
+}
+
+/* Remove borders on the last cell of each conceptual row */
+/* Note: This needs to target the correct child index based on TOTAL columns (num_aisles + 1) */
+.grid-cell:nth-child(calc(var(--num-aisles, 12) + 1)) { border-right: none; }
+
+/* Remove border from the VERY last cell (the right-side section headers/corner) */
+.grid-cell:nth-child(calc(var(--num-aisles, 25) + 2)) { border-right: none; }
+
+/* Header Cell Styling */
+.header-cell {
+    background-color: var(--grid-header-bg);
+    color: var(--light-grey);
+    font-weight: 600;
+    position: sticky; 
+    border-right-color: var(--grid-border-color) !important;
+}
+
+.corner-cell { 
+    left: 0; top: 0; z-index: 3; 
+    border-bottom-color: var(--grid-border-color) !important; 
+    border-right-color: var(--grid-border-color) !important;
+}
+
+.corner-cell-right {
+    right: 0; top: 0; z-index: 3; /* Position sticky */
+    border-left: 1px solid var(--grid-border-color); /* Add left border */
+    border-right: none; /* Ensure no right border */
+}
+
+.aisle-header { top: 0; z-index: 2; }
+.section-header { left: 0; z-index: 1; }
+
+.section-header {
+    justify-content: center; /* Center vertically */
+    align-items: center; /* Center horizontally */
+    padding: 5px 4px; /* Restore standard padding */
+    font-size: 0.8rem; /* Match data cell font size or adjust as needed */
+    /* border-right: 1px solid var(--grid-border-color); /* Standard cell style handles this */
+    min-width: 25px; /* Reduced width for vertical */
+    line-height: 1.1;
+}
+
+/* Section Label Styling */
+.section-label-cell { /* New class for the spanning header */
+    font-weight: bold;
+    /* Vertical alignment within the spanned rows is handled by grid inherently + flex */
+    display: flex; /* Ensure flex behavior */
+    align-items: center; /* Center content vertically */
+    justify-content: center; /* Center content horizontally */
+    height: 100%; /* Attempt to fill the vertical space of the 3 spanned rows */
+    min-height: unset; /* Override the default min-height */
+    /* Ensure borders are applied correctly to the spanning cell */
+    border-right: 1px solid var(--grid-border-color);
+    border-bottom: 1px solid var(--grid-border-color);
+}
+
+/* Data Cell Styling */
+.data-cell {
+    font-weight: 500;
+    background-color: var(--grid-cell-bg);
+}
+
+.data-cell.no-data {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Percentage Text Styling & Coloring */
+.bin-percent {
+    display: inline-block; /* Needed for padding/margins if any */
+    font-weight: 600;
+}
+
+.bin-percent.bin-color-red { color: var(--bin-color-red); }
+.bin-percent.bin-color-yellow { color: var(--bin-color-yellow); }
+.bin-percent.bin-color-green { color: var(--bin-color-green); }
+.bin-percent.bin-color-unknown { color: var(--bin-color-unknown); }
+
+/* Styles for middle column separation */
+.cell-before-gap {
+    border-right: 3px solid var(--grid-border-color); /* Thicker border before gap */
+}
+
+.cell-after-gap {
+    border-left: 3px solid var(--grid-border-color); /* Thicker border after gap */
+    border-right: 3px solid var(--grid-border-color); /* Thicker border after gap */
+}
+
+/* Adjust borders for cells above/below the mid-header */
+.grid-data-row:last-of-type .data-cell { /* Might need refinement based on exact structure */
+    /* border-bottom: none; /* Remove bottom border if mid-header provides top */ 
+}
+
+/* Consider adding top border to section 500 headers/cells if needed */
+
+/* Alternate row shading for sections 100, 300, 500, 700 */
+.shaded-section-row .grid-cell { /* Apply to all cells in the row */
+    background-color: rgba(0, 0, 0, 0.1); /* Slightly darker background for data cells */
+}
+
+/* Ensure header cells in shaded rows keep their original background */
+.shaded-section-row .header-cell {
+    background-color: var(--grid-header-bg); /* Explicitly keep header background */
+}
+
+/* Special override for the corner cells in shaded rows */
+.shaded-section-row .corner-cell {
+    background-color: var(--grid-header-bg); /* Match header background */
+}
+
+/* Info Box Styling (Keep previous styling, maybe slight adjustments) */
+.additional-info-container {
+    flex-shrink: 0; /* Prevent info boxes from shrinking */
+    margin-top: 15px; /* Slightly reduced margin */
+}
+
+.info-box {
+    flex: 1; 
+    padding: 12px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-box h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 4px;
+    color: var(--amazon-orange);
+    font-size: 1rem; /* Slightly smaller */
+}
+
+.info-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.info-box li {
+    margin-bottom: 4px;
+    padding: 2px 0;
+}
+
+.info-box p {
+    font-style: italic;
+    color: #ccc;
+}
+
+.loading-message {
+    grid-column: 1 / -1; /* Span all columns */
+    text-align: center;
+    padding: 50px;
+    font-size: 1.2rem;
+    color: #ccc;
+}
+
+/* Color Swatch Styling (Keep previous styling) */
+.color-swatch {
+    display: inline-block;
+    width: 14px; /* Slightly smaller */
+    height: 14px; 
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: middle;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.color-swatch.red { background-color: var(--bin-color-red); }
+.color-swatch.yellow { background-color: var(--bin-color-yellow); }
+.color-swatch.green { background-color: var(--bin-color-green); }
+.color-swatch.unknown { background-color: var(--bin-color-unknown); }
+
+.grid-mid-header-row {
+    display: contents; /* Make children direct grid items */
+}
+
+.mid-aisle-header {
+    font-size: 0.7rem; /* Slightly smaller font */
+    font-weight: normal; /* Less emphasis than top headers */
+    border-top: 2px solid var(--grid-border-color); /* Separator */
+    border-bottom: 2px solid var(--grid-border-color); /* Separator */
+    min-height: 20px; /* Adjust height if needed */
+}
+
+.mid-corner-cell {
+    border-top: 2px solid var(--grid-border-color);
+    border-bottom: 2px solid var(--grid-border-color);
+    background-color: var(--grid-header-bg); /* Match header bg */
+}
+
+.grid-bottom-header-row {
+    display: contents; /* Make children direct grid items */
+}
+
+.bottom-aisle-header {
+    font-size: 0.8rem; /* Match top header font size */
+    font-weight: 600; /* Match top header weight */
+    border-top: 2px solid var(--grid-border-color); /* Separator from data */
+    border-bottom: none; /* No bottom border needed */
+    min-height: 25px; /* Match top header height */
+}
+
+.bottom-corner-cell {
+    border-top: 2px solid var(--grid-border-color); /* Separator */
+    border-bottom: none; /* No bottom border */
+    background-color: var(--grid-header-bg); /* Match header bg */
+} 

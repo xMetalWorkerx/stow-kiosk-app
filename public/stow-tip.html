@@ -1,0 +1,123 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!--
+  Relative Path: Stow Kiosk/public/stow-tip.html
+
+  Implementation Instructions:
+  1. Place this file in the `public` directory as `stow-tip.html`.
+  2. Ensure `public/css/kiosk.css` exists and is accessible.
+  3. The page is accessible at `http://localhost:3000/stow-tip`.
+  4. No server-side dependencies are required; the screen is fully client-side.
+  5. Verify the screen displays tips in English, Spanish, Hindi, and Kreyòl, rotating every 10 seconds.
+  6. The screen uses styles from `kiosk.css` for consistency with other kiosk displays.
+-->
+<!--
+  Stow Quality Tip Screen
+  Displays a rotating stow quality tip in multiple languages.
+  - Rotates through English, Spanish, Hindi, and Kreyòl every 10 seconds.
+  - Fully client-side, no server dependencies.
+  - Requires `kiosk.css` for styling.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stow Quality Tip</title>
+  <link rel="stylesheet" href="/css/kiosk.css">
+  <style>
+    .tip-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      font-size: 2rem;
+      color: var(--light-grey);
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    }
+    .tip-language {
+      display: none;
+    }
+    .tip-language.active {
+      display: block;
+      animation: fadeInOut 10s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="kiosk-container">
+    <div class="header">
+      <div class="logo">
+        <span id="side-title">Stow Quality Tip</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="tip-container">
+        <div class="tip-language" data-lang="en">Ensure items are placed securely to prevent falling.</div>
+        <div class="tip-language" data-lang="es">Asegúrese de que los artículos estén colocados de forma segura para evitar caídas.</div>
+        <div class="tip-language" data-lang="hi">सुनिश्चित करें कि आइटम सुरक्षित रूप से रखे गए हैं ताकि वे गिरें नहीं।</div>
+        <div class="tip-language" data-lang="ht">Asire ke atik yo mete an sekirite pou anpeche yo tonbe.</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Select all language tip elements
+    const tips = document.querySelectorAll('.tip-language');
+    let currentIndex = 0; // Index of the currently displayed tip
+
+    // Function to rotate the displayed tip
+    function rotateTips() {
+      // Hide all tips
+      tips.forEach(tip => tip.classList.remove('active'));
+      // Show the tip at the current index
+      tips[currentIndex].classList.add('active');
+      // Move to the next index, looping back to 0 if necessary
+      currentIndex = (currentIndex + 1) % tips.length;
+    }
+
+    rotateTips(); // Show the first tip immediately
+    // Set interval to rotate tips every 10 seconds
+    setInterval(rotateTips, 10000);
+  </script>
+</body>
+</html> 
