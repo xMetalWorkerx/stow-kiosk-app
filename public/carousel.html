@@ -1,61 +1,3 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!--
-  Relative Path: Stow Kiosk/public/carousel.html
-
-  Implementation Instructions:
-  1. Place this file in the `public` directory as `carousel.html`.
-  2. Ensure `public/css/kiosk.css` and `public/js/utilities.js` exist and are accessible.
-  3. The page is accessible at `http://localhost:3000/carousel/:floor` (e.g., `/carousel/1`).
-  4. Requires WebSocket support in `server/index.js` and `findByFloor` in `server/models/Station.js`.
-  5. Verify the carousel displays active stations (AQ or PS) and cycles every 5 seconds.
-  6. The screen uses styles from `kiosk.css` for consistency with other kiosk displays.
--->
-<!--
-  Queue Carousel Screen
-  Displays active stations (AQ or PS) for a specific floor in a rotating carousel.
-  - Receives real-time station updates via WebSocket.
-  - Filters for stations on the specified floor.
-  - Cycles through active stations every 5 seconds.
-  - Requires `kiosk.css` for styling.
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,127 +6,426 @@
   <title>Queue Carousel</title>
   <link rel="stylesheet" href="/css/kiosk.css">
   <style>
-    .carousel-container {
-      flex: 1;
+    /* Full-screen container */
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: var(--amazon-blue);
+    }
+
+    .kiosk-container {
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-    }
-    .carousel {
-      width: 100%;
-      max-width: 800px;
-      overflow: hidden;
       position: relative;
     }
-    .carousel-track {
+
+    /* Minimal header for carousel */
+    .carousel-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: linear-gradient(180deg, 
+        rgba(35, 47, 62, 0.95) 0%, 
+        rgba(35, 47, 62, 0.8) 80%,
+        transparent 100%);
+      padding: 15px 30px;
       display: flex;
-      transition: transform 0.5s ease-in-out;
-    }
-    .carousel-item {
-      flex: 0 0 100%;
-      display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      padding: 20px;
-      background-color: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      min-height: 300px;
+      pointer-events: none;
     }
-    .carousel-item .station {
+
+    .carousel-header .logo {
+      font-size: 1.5rem;
+      color: var(--amazon-orange);
+      text-shadow: 0 0 10px rgba(255, 153, 0, 0.5);
+      pointer-events: auto;
+    }
+
+    /* Page indicator dots */
+    .carousel-indicators {
+      display: flex;
+      gap: 12px;
+      pointer-events: auto;
+    }
+
+    .indicator-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.3);
+      border: 2px solid rgba(255, 153, 0, 0.5);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .indicator-dot.active {
+      background-color: var(--amazon-orange);
+      border-color: var(--amazon-orange);
+      box-shadow: 0 0 15px rgba(255, 153, 0, 0.8),
+                  0 0 30px rgba(255, 153, 0, 0.4);
+      transform: scale(1.3);
+    }
+
+    .indicator-dot::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: white;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .indicator-dot.active::after {
+      opacity: 1;
+    }
+
+    /* Carousel container */
+    .carousel-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
       width: 100%;
-      max-width: 400px;
+      height: 100%;
+    }
+
+    .carousel-slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transform: scale(0.95);
+      transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+
+    .carousel-slide.active {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    .carousel-slide.leaving {
+      opacity: 0;
+      transform: scale(1.05);
+      z-index: 5;
+    }
+
+    /* Full-screen iframe for each page */
+    .carousel-slide iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background-color: var(--amazon-blue);
+      display: block;
+    }
+
+    /* Loading overlay */
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--amazon-blue) 0%, #1a252f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 1;
+      transition: opacity 0.5s;
+    }
+
+    .loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 153, 0, 0.2);
+      border-top-color: var(--amazon-orange);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Subtle page transition effects */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    .carousel-slide.active {
+      animation: slideIn 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Progress bar for rotation timing */
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, 
+        transparent 0%,
+        var(--amazon-orange)) 50%,
+        transparent 100%);
+      width: 0%;
+      transition: width linear;
+      z-index: 1001;
+      box-shadow: 0 0 10px rgba(255, 153, 0, 0.5);
+    }
+
+    /* Smooth fade transition between slides */
+    .carousel-slide.fade-out {
+      opacity: 0;
+      transition: opacity 0.8s ease-out;
+    }
+
+    .carousel-slide.fade-in {
+      opacity: 1;
+      transition: opacity 0.8s ease-in;
+    }
+
+    /* Add a subtle border glow to active slide */
+    .carousel-slide.active::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 3px solid transparent;
+      border-image: linear-gradient(45deg, 
+        rgba(255, 153, 0, 0.3) 0%,
+        rgba(255, 153, 0, 0.1) 50%,
+        rgba(255, 153, 0, 0.3) 100%) 1;
+      pointer-events: none;
+      z-index: 11;
+      animation: borderPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes borderPulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 0.8; }
     }
   </style>
 </head>
 <body>
   <div class="kiosk-container">
-    <div class="header">
+    <!-- Header with indicators -->
+    <div class="carousel-header">
       <div class="logo">
-        <span id="side-title">Floor <span id="floor-number"></span> Queue</span>
+        <span>Queue Carousel</span>
       </div>
-      <div class="legend">
-        <div class="legend-item active-queue-legend">Active Queue</div>
-        <div class="legend-item problem-solver-legend">Problem Solver</div>
+      <div class="carousel-indicators">
+        <div class="indicator-dot active" data-slide="0" title="Side A"></div>
+        <div class="indicator-dot" data-slide="1" title="Stow Tip"></div>
+        <div class="indicator-dot" data-slide="2" title="Available Space"></div>
       </div>
     </div>
-    <div class="content">
-      <div class="carousel-container">
-        <div class="carousel">
-          <div class="carousel-track" id="carousel-track"></div>
-        </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar" id="progress-bar"></div>
+
+    <!-- Carousel wrapper -->
+    <div class="carousel-wrapper">
+      <!-- Loading overlay -->
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+      </div>
+
+      <!-- Slide 1: Side A -->
+      <div class="carousel-slide active" data-slide="0">
+        <iframe src="/side-a.html" id="slide-side-a" allowfullscreen></iframe>
+      </div>
+
+      <!-- Slide 2: Stow Tip -->
+      <div class="carousel-slide" data-slide="1">
+        <iframe src="/stow-tip.html" id="slide-stow-tip" allowfullscreen></iframe>
+      </div>
+
+      <!-- Slide 3: Available Space Static -->
+      <div class="carousel-slide" data-slide="2">
+        <iframe src="/available-space-static.html" id="slide-available-space" allowfullscreen></iframe>
       </div>
     </div>
   </div>
 
   <script>
-    // Get floor number from URL query parameter (default to 1)
-    const floor = new URLSearchParams(window.location.search).get('floor') || '1';
-    document.getElementById('floor-number').textContent = floor;
+    // Configuration
+    const SLIDE_INTERVAL = 15000; // 15 seconds per slide
+    const TRANSITION_DURATION = 1200; // 1.2 seconds transition
+    const PROGRESS_DURATION = SLIDE_INTERVAL - TRANSITION_DURATION;
 
-    // Establish WebSocket connection for this floor
-    const ws = new WebSocket(`ws://${window.location.host}?floor=${floor}`);
-    let stations = []; // Holds the station data for this floor
+    const slides = document.querySelectorAll('.carousel-slide');
+    const indicators = document.querySelectorAll('.indicator-dot');
+    const progressBar = document.getElementById('progress-bar');
+    const loadingOverlay = document.getElementById('loading-overlay');
 
-    // Handle incoming WebSocket messages
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      // Check if the message contains station data
-      if (message.type === 'stations') {
-        // Filter out inactive stations
-        stations = message.data.filter(s => s.status !== 'Inactive');
-        updateCarousel(); // Update the display
-      }
-    };
+    let currentSlide = 0;
+    let rotationInterval = null;
+    let progressInterval = null;
 
-    // Function to render the carousel with current station data
-    function updateCarousel() {
-      const track = document.getElementById("carousel-track");
-      track.innerHTML = '';
-      if (stations.length === 0) {
-        track.innerHTML = '<div class="carousel-item">No active stations</div>';
-        return;
-      }
-      stations.forEach((station, index) => {
-        const item = document.createElement('div');
-        item.className = 'carousel-item';
-        const stationDiv = document.createElement('div');
-        stationDiv.className = `station station-${station.status.toLowerCase()}`;
-        stationDiv.innerHTML = `
-          <div class="station-number">${station.station_number}</div>
-          <div class="station-arrow ${station.end_indicator.toLowerCase()}"></div>
-        `;
-        item.appendChild(stationDiv);
-        track.appendChild(item);
+    // Initialize: hide loading overlay after a short delay
+    setTimeout(() => {
+      loadingOverlay.classList.add('hidden');
+    }, 1000);
+
+    // Function to show a specific slide
+    function showSlide(index) {
+      // Update active class on slides
+      slides.forEach((slide, i) => {
+        slide.classList.remove('active', 'leaving');
+        if (i === index) {
+          slide.classList.add('active');
+        } else if (slide.classList.contains('active')) {
+          slide.classList.add('leaving');
+          setTimeout(() => slide.classList.remove('leaving'), TRANSITION_DURATION);
+        }
       });
 
-      let currentIndex = 0;
-      // Clear any existing interval to avoid duplicates if updateCarousel is called rapidly
-      if (window.carouselInterval) clearInterval(window.carouselInterval);
-      
-      // Start the carousel rotation if there are stations to show
-      if (stations.length > 0) {
-          window.carouselInterval = setInterval(() => {
-          currentIndex = (currentIndex + 1) % stations.length;
-          // Move the track to show the next item
-          track.style.transform = `translateX(-${currentIndex * 100}%)`;
-        }, 5000); // Rotate every 5 seconds
+      // Update indicators
+      indicators.forEach((indicator, i) => {
+        indicator.classList.toggle('active', i === index);
+      });
+
+      // Reset and start progress bar
+      progressBar.style.width = '0%';
+      progressBar.style.transition = `width ${PROGRESS_DURATION}ms linear`;
+
+      // Clear any existing progress interval
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+
+      // Animate progress bar
+      setTimeout(() => {
+        progressBar.style.width = '100%';
+      }, 50);
+    }
+
+    // Function to go to next slide
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % slides.length;
+      showSlide(currentSlide);
+    }
+
+    // Function to go to a specific slide
+    function goToSlide(index) {
+      if (index >= 0 && index < slides.length) {
+        currentSlide = index;
+        showSlide(currentSlide);
+        restartRotation();
       }
     }
 
-    // Handle WebSocket errors
-    ws.onerror = (error) => {
-        console.error('WebSocket Error:', error);
-        // Optionally display an error message on the screen
-    };
+    // Function to start/restart the rotation
+    function restartRotation() {
+      // Clear existing interval
+      if (rotationInterval) {
+        clearInterval(rotationInterval);
+      }
 
-    // Handle WebSocket connection closing
-    ws.onclose = () => {
-        console.log('WebSocket connection closed. Attempting to reconnect...');
-        // Implement reconnection logic if desired
-    };
+      // Start new rotation
+      rotationInterval = setInterval(nextSlide, SLIDE_INTERVAL);
+    }
 
+    // Handle indicator clicks
+    indicators.forEach((indicator, index) => {
+      indicator.addEventListener('click', () => {
+        goToSlide(index);
+      });
+    });
+
+    // Handle keyboard navigation (optional)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+        showSlide(currentSlide);
+        restartRotation();
+      } else if (e.key === 'ArrowRight') {
+        nextSlide();
+        restartRotation();
+      }
+    });
+
+    // Preload iframes to ensure smooth transitions
+    window.addEventListener('load', () => {
+      // Force iframes to load
+      slides.forEach(slide => {
+        const iframe = slide.querySelector('iframe');
+        if (iframe) {
+          iframe.addEventListener('load', () => {
+            console.log(`Loaded: ${iframe.src}`);
+          });
+        }
+      });
+
+      // Hide loading overlay after all iframes are ready
+      setTimeout(() => {
+        loadingOverlay.classList.add('hidden');
+      }, 2000);
+    });
+
+    // Start the rotation
+    showSlide(0);
+    restartRotation();
+
+    // Handle page visibility to pause/resume rotation when tab is hidden/visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (rotationInterval) {
+          clearInterval(rotationInterval);
+          rotationInterval = null;
+        }
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          progressInterval = null;
+        }
+        progressBar.style.width = '0%';
+      } else {
+        restartRotation();
+      }
+    });
+
+    // Ensure smooth transitions by pre-rendering
+    slides.forEach((slide, index) => {
+      if (index !== currentSlide) {
+        slide.style.visibility = 'hidden';
+      }
+    });
+
+    // After first transition, make all slides visible for smoother transitions
+    setTimeout(() => {
+      slides.forEach(slide => {
+        slide.style.visibility = 'visible';
+      });
+    }, TRANSITION_DURATION + 100);
   </script>
 </body>
-</html> 
+</html>
